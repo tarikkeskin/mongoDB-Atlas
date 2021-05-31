@@ -1,0 +1,163 @@
+<html>
+  <head>
+    <script src="https://unpkg.com/realm-web@1.2.0/dist/bundle.iife.js"></script>
+
+
+  </head>
+
+  <body >
+
+    <div class="header">
+        <h1>Video Games Services</h1>
+        <div id="homepage">
+          <h3>Homepage</h3>
+        </div>
+    </div>
+    <hr>
+
+    <div class="add-game">
+        <p>Add New Game</p>
+    
+        <input type="text" placeholder="Game Name" id="gameName">
+        <h1></h1>
+        <input type="text" placeholder="Genre" id="genre">
+        <h1></h1>
+        <input type="text" placeholder="Photo" id="photo">
+        <h1></h1>
+        <button class="button" onclick="addGame()" value="addGame">Add Invention</button>
+      </div>
+
+      <hr>
+      <div class="remove-game">
+        <p>Remove Game</p>
+    
+        <input type="text" placeholder="Game Name" id="gameName">
+        <h1></h1>
+
+        <button class="button" onclick="removeGame()">Remove Game</button>
+      </div>
+
+      
+
+      <hr>
+    <div class="user-header">
+        <br/><br/>
+        Add User: <input id="newUser"><input class="index-add" value="Add" type="submit" onClick="addUser()">
+        <br/><br/>
+        Delete User: <input id="deleteUser"><input class="index-delete" value="Delete" type="submit" onClick="deleteUser()">
+        <br/><br/>
+        Login as a User: <input id="loginUser"><input class="index-login" value="Login" type="submit" onClick="loginUser()">
+        <br/><br/><br/>
+		</div>
+
+
+    <script>
+        const app = new Realm.App({ id: "ceng-495-games-twlxy" });
+        const mongodb = app.currentUser.mongoClient("mongodb-atlas");
+        
+        const db = mongodb.db("gameService");
+
+
+
+        function addUser() {
+            const newUser = document.getElementById("newUser");
+            db.collection("users")
+            .find({user: newUser.value}, { limit: 1 })
+            .then(async function (docs) {
+                if (docs.length > 0) {
+                    alert("User name should be unique.");
+                    newUser.value = "";
+                }
+                else {       
+                    console.log("add user", app.currentUser.id)     
+                    db.collection("users")
+                        .insertOne({ owner_id: app.currentUser.id,
+                                    user: newUser.value,
+                                    averageOfRating:0,
+                                    totalPlayedTime: 0,
+                                    mostPlayedGame: "",
+                                    comments: [] })
+    
+
+                    await addToAllInventions(newUser.value)
+                    newUser.value = "";
+
+                                        
+                }
+            });
+            
+        }
+        function deleteUser(){
+
+            const deletedUser = document.getElementById("deleteUser");
+
+            db.collection("users")
+            .find({user: deletedUser.value}, { limit: 1 })
+            .then(function (docs) {
+                if (docs.length == 0) {
+                    alert("User '" + deletedUser.value + "' does not exist.");
+                    deletedUser.value = "";
+                }
+                else {       
+                    console.log("deleting user: ");
+
+                    db.collection("users")
+                        .deleteOne( {user: deletedUser.value})
+                
+                    alert(deletedUser.value + "' is deleted."); 
+                    deletedUser.value = "";                       
+                }
+            });
+
+        }
+
+        function addGame(){
+            const gameName = document.getElementById("gameName");
+            const genre = document.getElementById("genre");
+            const photo = document.getElementById("photo");
+
+            if (gameName.value == '' || genre.value == '' || photo.value=='') {
+                    alert("Please enter all required field!")
+                    return;
+            }
+
+            db.collection("games")
+            .find({gameName: gameName.value}, { limit: 1 })
+            .then(async function (docs) {
+                if (docs.length > 0) {
+                    alert("This game already exists.");
+                    productName.value = "";
+                }
+                else {    
+                
+                let allUsers = await db.collection("users")
+                    .find({}, { limit: 1000 })
+                    .then(function(docs) {
+                        const usersInDB = docs.map(doc => doc.user);
+                        return usersInDB;
+                    });
+
+
+                db.collection("games").insertOne(
+                    {          
+                        nameofgame: gameName.value,
+                        genre: genre.value,
+                        photo: photo.value,
+                        playtime:0,
+                        rating: 0,
+                        allComments: []
+
+                    }           
+                )               
+                    
+                }
+            });
+        }
+
+
+
+
+      </script>
+  </body>
+
+</html>
