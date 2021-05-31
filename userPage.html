@@ -1,0 +1,99 @@
+<html>
+  <head>
+    <script src="https://unpkg.com/realm-web@1.2.0/dist/bundle.iife.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="style.css" media="screen"></link>
+
+
+  </head>
+
+  <body onLoad="loadUserInfo()">
+    <div class="header">
+        <h1>Video Games Services</h1>
+        <hr>
+        <div id="homepage">
+          <h3>UserPage</h3>
+        </div>
+    </div>
+    <hr>
+
+    <div class="card text-dark bg-warning mb-3" style="max-width: 18rem;">
+        <div class="card-header" id="username"></div>
+        <div class="card-body">
+          <p class="card-text"> Average of Rating <div id="averageOfRating"></div></p>
+          <hr>
+          <p class="card-text"> Total Played Game <div id="totalPlayedTime"></div></p>
+          <hr>
+          <p class="card-text"> Most Played Game <div id="mostPlayedGame"></div></p>
+          <hr>
+          <p class="card-text"> Comments <div id="comments"></div></p>
+        </div>
+      </div>
+
+    <hr>
+    <button type="button" class="btn btn-success" onclick="loadGamePage()">Go To Game Page (You can Rate,Play and Comment on a Game)</button>
+    <hr>
+
+
+    <script>
+
+        const app = new Realm.App({ id: "ceng-495-games-twlxy" });
+        const mongodb = app.currentUser.mongoClient("mongodb-atlas");
+        
+        const db = mongodb.db("gameService");
+
+        function loadUserInfo(){
+            var url_string = document.location.href;
+            var url = new URL(url_string);
+
+            var username = url.searchParams.get("username");
+
+
+            db.collection("users")
+                .find({user: username}, { limit: 1 })
+                .then(function (docs) {
+                    if (docs.length > 0) {
+                        
+                        document.getElementById("username").innerHTML = docs.map(doc=>doc.user);
+                        document.getElementById("averageOfRating").innerHTML = docs.map(doc=>doc.averageOfRating);
+                        document.getElementById("totalPlayedTime").innerHTML = docs.map(doc=>doc.totalPlayedTime);
+                        document.getElementById("mostPlayedGame").innerHTML = docs.map(doc=>doc.mostPlayedGame);
+                        document.getElementById("comments").innerHTML = docs.map(doc=>doc.comments);
+
+                    }
+                });
+                
+                
+
+                user = username;
+        }
+
+        function loadGamePage(){
+
+            var url_string = document.location.href;
+            var url = new URL(url_string);
+
+            var username = url.searchParams.get("username");
+
+            db.collection("users")
+            .find({user: username}, { limit: 1 })
+            .then(function (docs) {
+                if(docs.length>0){
+                    sendInfoToGamePage(username);
+                }
+            }); 
+
+        }
+
+        function sendInfoToGamePage(user){
+            if (user != "") {
+                document.location = "gamesPage.html?username=" + user;
+            } else {
+                alert(user + " does not exist.");
+            }
+        }
+
+    </script>   
+
+  </body>
+</html>  

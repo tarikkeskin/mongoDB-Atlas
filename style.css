@@ -1,0 +1,15 @@
+.card {
+    margin: 0 auto; /* Added */
+    float: none; /* Added */
+    margin-bottom: 10px; /* Added */
+}
+.header {
+    background:	#29910f;
+    
+    text-align: center;  
+    font-size: 52px;
+    padding: 30px;  
+    color: rgb(239, 232, 240);  
+    font-style: italic;  
+    font-weight: bold;
+  }
