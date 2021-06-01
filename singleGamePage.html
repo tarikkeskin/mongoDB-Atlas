@@ -34,13 +34,15 @@
             
             const db = mongodb.db("gameService");
 
+            var url_string = document.location.href;
+            var url = new URL(url_string);
+            const gameName = (new URL(window.location.href)).searchParams.get("gameName");
+            const userName = (new URL(window.location.href)).searchParams.get("userName");
+
 
             function loadSingleGamePageInfo(){
 
-                var url_string = document.location.href;
-                var url = new URL(url_string);
-                const gameName = (new URL(window.location.href)).searchParams.get("gameName");
-                const userName = (new URL(window.location.href)).searchParams.get("userName");
+                
 
                 db.collection("users")
                 .find({user: userName}, { limit: 1 })
@@ -109,19 +111,46 @@
             }
 
             function rateProduct(){
-                console.log("hello rateproduct");
-                var gameName = document.getElementsByName('gameofName');
-                console.log(gameName.value);
+               
 
                 var val = radioButtonValue();
-                console.log(val);
 
-                if(val == -1){
-                    alert("Choose a valid rating.");
-                }
-                else{
+                db.collection("games").
+                find({nameofgame:gameName},{limit: 1})
+                .then(function (doc){
+                    //Getting value of collection
+                    //const allRatingsArray = doc.map(val => val.allRatings)[0][1].userName;
+                    const allRatingsArray = doc.map(val => val.allRatings)[0];
+                    console.log(allRatingsArray[0]);
 
-                }
+                    let i=0;
+                    let ratedFlag=0;
+                    while(allRatingsArray[i]){ // check before rate this game or not, if rated before ,update with new value 
+                        if(allRatingsArray[i].userName == userName){
+                            ratedFlag=1;
+                            db.collection("games").updateOne(
+                                {nameofgame: gameName,"allRatings.userName":userName},
+                                { $set:
+                                    {
+                                        "allRatings.$.rate": val
+                                    }
+
+                                }
+                            )
+
+                            break;
+                        }
+                        i++;
+                    }
+
+
+
+
+
+
+                });
+
+                
             }
 
         </script>
