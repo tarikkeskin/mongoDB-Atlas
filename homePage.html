@@ -6,16 +6,19 @@
 <link rel="stylesheet" type="text/css" href="style.css" media="screen"></link>
   </head>
 
-  <body >
+  <body onload="displayAllUsers()">
 
     <div class="header">
         <h1>Video Games Services</h1>
         <div id="homepage">
           <h3>Homepage</h3>
+          <hr>
+          <p>Available Users List</p>
+        <div id="users"></div>
         </div>
     </div>
     <hr>
-
+    <div class="container">
     <div class="add-game">
         <p>Add New Game</p>
     
@@ -27,8 +30,10 @@
         <h1></h1>
         <button class="button" onclick="addGame()" value="addGame">Add Game</button>
       </div>
+    </div>
 
       <hr>
+      <div class="container">
       <div class="remove-game">
         <p>Remove Game</p>
     
@@ -37,19 +42,26 @@
 
         <button class="button" onclick="removeGame()">Remove Game</button>
       </div>
+    </div>
 
       
 
       <hr>
+      <div class="container">
     <div class="user-header">
-        <br/><br/>
+        <br/>
         Add User: <input id="newUser"><input class="index-add" value="Add" type="submit" onClick="addUser()">
-        <br/><br/>
+        <h1></h1>
         Delete User: <input id="deleteUser"><input class="index-delete" value="Delete" type="submit" onClick="removeUser()">
-        <br/><br/>
+        <h1></h1>
         Login as a User: <input id="loginUser"><input class="index-login" value="Login" type="submit" onClick="loginUser()">
-        <br/><br/><br/>
-		</div>
+        <h1></h1>
+        <hr><hr>
+        <hr>
+        <hr>
+
+        </div>
+    </div>    
 
 
     <script>
@@ -57,6 +69,16 @@
         const mongodb = app.currentUser.mongoClient("mongodb-atlas");
         
         const db = mongodb.db("gameService");
+
+        function displayAllUsers() {
+            db.collection("users")
+                .find({}, { limit: 1000 })
+                .then(docs => {
+                    const html = docs.map(doc => `<div>${doc.user}</div>`);
+                    document.getElementById("users").innerHTML = html.join('');
+                })
+        }
+
 
         function addGame(){
             const gameName = document.getElementById("gameName");
@@ -83,8 +105,9 @@
                         genre: genre.value,
                         photo: photo.value,
                         playtime:0,
-                        rating: 0,
-                        allComments: []
+                        rating:0 ,
+                        allRatings: [],  //{"userName":"ali","rate": 5 },
+                        allComments: []  //{"userName":"ali","comment":"goooood!"}
 
                     }           
                 )
@@ -138,7 +161,10 @@
                                     averageOfRating:0,
                                     totalPlayedTime: 0,
                                     mostPlayedGame: "",
-                                    comments: [] })
+                                    ratedFor: [], //{"gameName":"Valorant","rate": 5 },
+                                    comments: []  //{"gameName":"Valorant","comment":"goooood!"}
+                                    }
+                                    )
                     newUser.value = "";
 
                                         
