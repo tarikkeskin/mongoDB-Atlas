@@ -21,7 +21,8 @@ text-align: center;
 } 
 .txt-center {
     text-align: center;
-  }
+    margin: auto;
+}
   .hide {
     display: none;
   }
@@ -65,3 +66,4 @@ text-align: center;
       left: 0;
       color: #FFD700;
   }
+  

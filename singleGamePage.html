@@ -6,7 +6,7 @@
 
     </head>
 
-    <body onLoad="loadSingleGamePageInfo()">
+    <body onload="calculateGameRating();loadSingleGamePageInfo();updateAverageRatingOfUser()" >
 
         <div class="header">
             <h1>Video Games Services</h1>
@@ -69,6 +69,7 @@
                                     <p class="card-text">Genre: ${doc.genre}</p>
                                     <p class="card-text">Play time: ${doc.playtime}</p>
                                     <p class="card-text">Rating: ${doc.rating}</p>
+                                    <div class="container">
                                     <div class="txt-center">
                                         <form>
                                                 <div class="rating">
@@ -83,13 +84,15 @@
                                                     <input id="star1" name="star" type="radio" value="1" class="radio-btn hide" />
                                                     <label for="star1" >☆</label>
                                                     <div class="clear"></div>
-                                                    <button type="button" onclick="rateProduct()">Rate Product</button>
+                                                    <button type="button" onclick="addRate()">Rate Product</button>
                                                     
                                                 </div>
                                             </form>
                                     </div>
-                                    <input id="newUser"><input class="index-add" value="Add comment" type="submit" onClick="addComment()">
-                                    <a href="./singleGamePage.html?gameName=${doc.nameofgame}&userName=${username}" class="btn btn-primary">More Detail... (You can see all comments)</a>
+                                    </div>
+                                    <input id="newPlayTime"><input class="index-add" value="Add playTime" type="submit" onClick="addPlayTime()">
+                                    <input id="newComment"><input class="index-add" value="Add comment" type="submit" onClick="addComment()">
+                                
                                    
                                 </div>`
 
@@ -100,7 +103,7 @@
                 });
             }
 
-            function radioButtonValue() { 
+            function getValue() { 
                 var value = document.getElementsByName('star'); 
                     
                 for(var i = 0; i < value.length; i++) { 
@@ -110,18 +113,16 @@
                 return -1;
             }
 
-            function rateProduct(){
+            function addRate(){
                
 
-                var val = radioButtonValue();
+                var val = getValue();
 
                 db.collection("games").
                 find({nameofgame:gameName},{limit: 1})
                 .then(function (doc){
                     //Getting value of collection
-                    //const allRatingsArray = doc.map(val => val.allRatings)[0][1].userName;
                     const allRatingsArray = doc.map(val => val.allRatings)[0];
-                    console.log(allRatingsArray[0]);
 
                     let i=0;
                     let ratedFlag=0;
@@ -130,28 +131,198 @@
                             ratedFlag=1;
                             db.collection("games").updateOne(
                                 {nameofgame: gameName,"allRatings.userName":userName},
-                                { $set:
+                                { 
+                                    $set:
                                     {
                                         "allRatings.$.rate": val
                                     }
 
                                 }
-                            )
+                            );
+                            db.collection("users").updateOne(
+                                {user: userName,"ratedFor.gameName":gameName},
+                                { 
+                                    $set:
+                                    {
+                                        "ratedFor.$.rate": val
+                                    }
+
+                                }
+                            );
+                            alert("Rate has been Updated with ("+val+")");
 
                             break;
                         }
                         i++;
                     }
+                    if(ratedFlag==0){ //this user didnt Rate this game, add to allRatings and ratedFor array in collections
+
+                        db.collection("games").updateOne(
+                            {nameofgame: gameName},
+                            {
+                                $push: {
+                                    "allRatings":{"userName":userName,"rate":val}
+                                }
+                            }
+                        );
+
+                        db.collection("users").updateOne(
+                            {user: userName},
+                            {
+                                $push: {
+                                    
+                                    "ratedFor":{"gameName":gameName,"rate":val}
+                                }
+                            }
+                        );
+                        
+                        alert("You Rated ("+val+")");
+
+                    }
+                    
+                });
+                updateAverageRatingOfUser();
+            }
+
+            function addComment(){
+
+                const newComment = document.getElementById("newComment");
+
+                console.log(newComment.value);
+
+                db.collection("games").updateOne(
+                            {nameofgame: gameName},
+                            {
+                                $push: {
+                                    "allComments":{"userName":userName,"comment":newComment.value}
+                                }
+                            }
+                        );
+
+                        db.collection("users").updateOne(
+                            {user: userName},
+                            {
+                                $push: {
+                                    
+                                    "comments":{"gameName":gameName,"comment":newComment.value}
+                                }
+                            }
+                        );
 
 
+            }
 
+            function updateAverageRatingOfUser(){
+                
+                let average=0;
+                db.collection("users")
+                .find({user:userName},{limit:1})
+                .then(function (doc){
+                    
+                    const ratingArray = doc.map(val => val.ratedFor)[0];
+                    let i=0;
+                    let toplam=0;
+                    console.log(ratingArray[i].rate);
+                    while(ratingArray[i]){
 
+                        toplam+=ratingArray[i].rate;
+                        i++;
+                    }
+                    console.log(toplam);
+                    average = toplam/i;
+                    
+                    db.collection("users").updateOne(
+                            {user: userName},
+                            {
+                                $set: {
+                                    
+                                    "averageOfRating":average
+                                }
+                            }
+                        );
+                    
+                });
+            }
 
+            
+            function addPlayTime(){
 
+                const newPlayTime = document.getElementById("newPlayTime");
+                var playtimeInt = parseInt(newPlayTime.value);
+
+                db.collection("games").updateOne(
+                    {nameofgame: gameName},
+                    {
+                        $inc:{ "playtime":playtimeInt }
+                    }
+                );
+                alert("You Played this game '"+playtimeInt+"' hours !!!");
+
+                db.collection("users")
+                .find({user:userName},{limit:1})
+                .then(function (doc){
+                    const allRatingsArray = doc.map(val => val.gamePlayedTimes)[0];
+
+                    let i=0;
+                    let playedFlag=0;
+                    while(allRatingsArray[i]){ // check before played this game or not, if played before ,update with new value 
+                        if(allRatingsArray[i].gameName == gameName){
+                            playedFlag=1;
+        
+                            db.collection("users").updateOne(
+                                {user: userName,"gamePlayedTimes.gameName":gameName},
+                                { 
+                                    $inc:
+                                    {
+                                        "gamePlayedTimes.$.time": playtimeInt
+                                    }
+
+                                }
+                            );
+                            break;
+                        }
+                        i++;
+                    }
+                    if(playedFlag==0){ //this user didnt Play this game, add to gamePlayedTimes array in collections
+
+                        db.collection("users").updateOne(
+                            {user: userName},
+                            {
+                                $push: {
+                                    
+                                    "gamePlayedTimes":{"gameName":gameName,"time":playtimeInt}
+                                }
+                            }
+                        );
+                        
+
+                    }
+                    
+                   
                 });
 
                 
+
             }
+
+            function calculateGameRating(){
+
+                let rating=0;
+                db.collection("users")
+                .find({},{limit:1000})
+                .then(function (docs){
+                    console.log(docs.map(doc=>doc));
+                    const allUsers = docs.map(doc=>doc);
+
+                    let i=0;
+                    while(allUsers[i]){
+
+                    }
+                    
+                });
+
+            }
+
 
         </script>
 
