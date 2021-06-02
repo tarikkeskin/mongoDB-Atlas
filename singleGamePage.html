@@ -3,10 +3,11 @@
     <script src="https://unpkg.com/realm-web@1.2.0/dist/bundle.iife.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
     <link rel="stylesheet" type="text/css" href="style.css" media="screen"></link>
+    
 
     </head>
 
-    <body onload="calculateGameRating();loadSingleGamePageInfo();updateAverageRatingOfUser()" >
+    <body onload="calculateGameRating();loadSingleGamePageInfo();loadComments()" >
 
         <div class="header">
             <h1>Video Games Services</h1>
@@ -25,6 +26,15 @@
           </div>
 
           <div  class="showAllGame" id="showGame"></div>
+          
+          <div class="container">
+            <h3>All Comments From Users</h3>
+          <div  class="showAllGame" id="showComments"></div>
+        </div>
+        <hr>
+        <hr>
+        <hr>
+        <hr>
 
         
 
@@ -62,13 +72,17 @@
 
                     const game=docs.map(function (doc){
 
+                        //console.log(doc.allComments[0]);
+
                         return `<div class="card text-center" style="width: 18rem;" >
                                 <img src="${doc.photo}" class="card-img-top" alt="${doc.nameofgame}">
                                 <div class="card-body">
                                     <h5 class="card-title">Name: ${doc.nameofgame}</h5>
+                                    <hr>
                                     <p class="card-text">Genre: ${doc.genre}</p>
                                     <p class="card-text">Play time: ${doc.playtime}</p>
                                     <p class="card-text">Rating: ${doc.rating}</p>
+                                    <p class="card-text">Comments: ${doc.allComments}</p>
                                     <div class="container">
                                     <div class="txt-center">
                                         <form>
@@ -155,6 +169,7 @@
                         }
                         i++;
                     }
+
                     if(ratedFlag==0){ //this user didnt Rate this game, add to allRatings and ratedFor array in collections
 
                         db.collection("games").updateOne(
@@ -170,7 +185,7 @@
                             {user: userName},
                             {
                                 $push: {
-                                    
+
                                     "ratedFor":{"gameName":gameName,"rate":val}
                                 }
                             }
@@ -300,7 +315,7 @@
                     
                    
                 });
-
+                //location.reload();
                 
 
             }
@@ -308,18 +323,90 @@
             function calculateGameRating(){
 
                 let rating=0;
-                db.collection("users")
-                .find({},{limit:1000})
-                .then(function (docs){
-                    console.log(docs.map(doc=>doc));
-                    const allUsers = docs.map(doc=>doc);
 
-                    let i=0;
-                    while(allUsers[i]){
+                db.collection("games")
+                .find({},{limit:100})
+                .then(function (gameDocs){
+                    //console.log(gameDocs.map(gameDoc=>gameDoc));
 
+                    const allGames = gameDocs.map(gameDoc=>gameDoc);
+
+                    let j=0;
+                    while(allGames[j]){// travel all game
+                        let nameOfGame = allGames[j].nameofgame; // game name
+                        db.collection("users")
+                        .find({},{limit:1000})
+                        .then(function (docs){
+                            const allUsers = docs.map(doc=>doc);
+
+                            let i=0;
+                            let usersPlayTime=0;
+                            let playtimetemp=0;
+                            while(allUsers[i]){
+                                //console.log(allUsers[i].gamePlayedTimes);
+                                let k=0;
+                                
+                                let rating= allUsers[i].averageOfRating;
+                                while(allUsers[i].gamePlayedTimes[k]){
+                                    if(allUsers[i].gamePlayedTimes[k].gameName == nameOfGame){
+                                        //(UserPlayTime * UserRating ) *****FORMULA****
+                                        playtimetemp+=rating*allUsers[i].gamePlayedTimes[k].time;
+                                    }
+                                    k++;
+                                }
+                                //console.log("Playtimetemp = "+ playtimetemp);
+                                
+                                i++;
+                            }
+
+                            db.collection("games")
+                            .find({nameofgame:nameOfGame})
+                            .then(function (game){
+                                const gameArr = game.map(x=>x)[0];
+                                //console.log(gameArr);
+
+                                let totalplaytimeTemp= gameArr.playtime;
+                                //console.log(totalplaytimeTemp);
+                                let resultRate = playtimetemp/totalplaytimeTemp;
+                                //console.log(resultRate);
+                                db.collection("games")
+                                .updateOne(
+                                    {nameofgame:nameOfGame},
+                                    {
+                                        $set:{"rating":resultRate}
+                                    }
+
+                                );   
+                            });    
+                        });
+                        j++;
                     }
-                    
+
                 });
+            }
+
+            function loadComments(){
+                db.collection("games")
+                .find({nameofgame:gameName},{limit:100})
+                .then(function (docs){
+                    var out = "";
+                    const game=docs.map(function (doc){
+
+                        console.log(doc.allComments);
+                        let i=0;
+                        while(doc.allComments[i]){
+                            
+                            console.log(doc.allComments[i].comment);
+                            out += "<li>"+doc.allComments[i].userName +"-->"+ doc.allComments[i].comment + "</li>"; 
+                            i++; 
+                        }
+
+                    });
+                    document.getElementById("showComments").innerHTML = out;
+
+
+                });
+
 
             }
 
