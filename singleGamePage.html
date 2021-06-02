@@ -7,7 +7,7 @@
 
     </head>
 
-    <body onload="calculateGameRating();loadSingleGamePageInfo();loadComments()" >
+    <body onload="calculateGameRating();loadSingleGamePageInfo();loadComments();updateAverageRatingOfUser()" >
 
         <div class="header">
             <h1>Video Games Services</h1>
@@ -21,7 +21,7 @@
         <div class="card text-dark bg-warning mb-3" style="max-width: 18rem;">
             <div class="card-header" id="username"></div>
             <div class="card-body">
-              <p class="card-text"> Average of Rating <div id="averageOfRating"></div></p>
+              <p class="card-text"> User's Average of Rating <div id="averageOfRating"></div></p>
             </div>
           </div>
 
@@ -71,8 +71,12 @@
                 .then(function (docs){
 
                     const game=docs.map(function (doc){
-
-                        //console.log(doc.allComments[0]);
+                        let y=0;
+                        console.log(doc.allRatings.map(function (x){
+                            if(x.userName==userName) y=x.rate;
+                            
+                        }));
+                    
 
                         return `<div class="card text-center" style="width: 18rem;" >
                                 <img src="${doc.photo}" class="card-img-top" alt="${doc.nameofgame}">
@@ -82,8 +86,8 @@
                                     <p class="card-text">Genre: ${doc.genre}</p>
                                     <p class="card-text">Play time: ${doc.playtime}</p>
                                     <p class="card-text">Rating: ${doc.rating}</p>
-                                    <p class="card-text">Comments: ${doc.allComments}</p>
                                     <div class="container">
+                                    
                                     <div class="txt-center">
                                         <form>
                                                 <div class="rating">
@@ -98,7 +102,8 @@
                                                     <input id="star1" name="star" type="radio" value="1" class="radio-btn hide" />
                                                     <label for="star1" >☆</label>
                                                     <div class="clear"></div>
-                                                    <button type="button" onclick="addRate()">Rate Product</button>
+                                                    <button type="button" onclick="addRate()">Rate</button>
+                                                    <h6>Your current rate ${y}</h6>
                                                     
                                                 </div>
                                             </form>
@@ -127,14 +132,16 @@
                 return -1;
             }
 
-            function addRate(){
+            async function addRate(){
                
 
                 var val = getValue();
 
-                db.collection("games").
+                console.log(val);
+
+                await db.collection("games").
                 find({nameofgame:gameName},{limit: 1})
-                .then(function (doc){
+                .then(async function (doc){
                     //Getting value of collection
                     const allRatingsArray = doc.map(val => val.allRatings)[0];
 
@@ -143,7 +150,7 @@
                     while(allRatingsArray[i]){ // check before rate this game or not, if rated before ,update with new value 
                         if(allRatingsArray[i].userName == userName){
                             ratedFlag=1;
-                            db.collection("games").updateOne(
+                             await db.collection("games").updateOne(
                                 {nameofgame: gameName,"allRatings.userName":userName},
                                 { 
                                     $set:
@@ -153,7 +160,7 @@
 
                                 }
                             );
-                            db.collection("users").updateOne(
+                            await  db.collection("users").updateOne(
                                 {user: userName,"ratedFor.gameName":gameName},
                                 { 
                                     $set:
@@ -172,7 +179,7 @@
 
                     if(ratedFlag==0){ //this user didnt Rate this game, add to allRatings and ratedFor array in collections
 
-                        db.collection("games").updateOne(
+                         await db.collection("games").updateOne(
                             {nameofgame: gameName},
                             {
                                 $push: {
@@ -181,7 +188,7 @@
                             }
                         );
 
-                        db.collection("users").updateOne(
+                         await db.collection("users").updateOne(
                             {user: userName},
                             {
                                 $push: {
@@ -197,15 +204,33 @@
                     
                 });
                 updateAverageRatingOfUser();
+
+                location.reload();
             }
 
-            function addComment(){
+            async function addComment(){
 
                 const newComment = document.getElementById("newComment");
 
-                console.log(newComment.value);
+                //console.log(newComment.value);
 
-                db.collection("games").updateOne(
+                await db.collection("users")
+                .find({user:userName},{limit:1})
+                .then(async function (users){
+
+                    const userArray = users.map(x=>x)[0].gamePlayedTimes;
+                    let i=0;
+                    let flag=0;
+                    while(userArray[i]){
+
+                        if(userArray[i].gameName==gameName) {
+                            flag=1;
+                            break;
+                            }
+                        i++;
+                    }
+                    if(flag==1) { // before played
+                        await db.collection("games").updateOne(
                             {nameofgame: gameName},
                             {
                                 $push: {
@@ -214,7 +239,7 @@
                             }
                         );
 
-                        db.collection("users").updateOne(
+                        await db.collection("users").updateOne(
                             {user: userName},
                             {
                                 $push: {
@@ -223,6 +248,18 @@
                                 }
                             }
                         );
+                        
+                    }
+                    else {
+                        alert("You cannot comment.You should Play At least 1 hour!!");
+                    }
+                });
+                
+
+                
+
+
+                        location.reload();
 
 
             }
@@ -237,15 +274,16 @@
                     const ratingArray = doc.map(val => val.ratedFor)[0];
                     let i=0;
                     let toplam=0;
-                    console.log(ratingArray[i].rate);
+                    //console.log(ratingArray[i].rate);
                     while(ratingArray[i]){
 
                         toplam+=ratingArray[i].rate;
                         i++;
                     }
-                    console.log(toplam);
-                    average = toplam/i;
-                    
+                    //console.log(toplam);
+                    if(i!=0){
+                        average = toplam/i;
+                    }
                     db.collection("users").updateOne(
                             {user: userName},
                             {
@@ -260,7 +298,7 @@
             }
 
             
-            function addPlayTime(){
+            async function addPlayTime(){
 
                 const newPlayTime = document.getElementById("newPlayTime");
                 var playtimeInt = parseInt(newPlayTime.value);
@@ -273,9 +311,9 @@
                 );
                 alert("You Played this game '"+playtimeInt+"' hours !!!");
 
-                db.collection("users")
+                await db.collection("users")
                 .find({user:userName},{limit:1})
-                .then(function (doc){
+                .then(async function (doc){
                     const allRatingsArray = doc.map(val => val.gamePlayedTimes)[0];
 
                     let i=0;
@@ -284,7 +322,7 @@
                         if(allRatingsArray[i].gameName == gameName){
                             playedFlag=1;
         
-                            db.collection("users").updateOne(
+                            await db.collection("users").updateOne(
                                 {user: userName,"gamePlayedTimes.gameName":gameName},
                                 { 
                                     $inc:
@@ -300,7 +338,7 @@
                     }
                     if(playedFlag==0){ //this user didnt Play this game, add to gamePlayedTimes array in collections
 
-                        db.collection("users").updateOne(
+                        await db.collection("users").updateOne(
                             {user: userName},
                             {
                                 $push: {
@@ -315,18 +353,20 @@
                     
                    
                 });
-                //location.reload();
+                location.reload();
                 
 
             }
 
-            function calculateGameRating(){
+             function calculateGameRating(){
 
                 let rating=0;
 
-                db.collection("games")
+                 db.collection("games")
                 .find({},{limit:100})
                 .then(function (gameDocs){
+                    
+                    
                     //console.log(gameDocs.map(gameDoc=>gameDoc));
 
                     const allGames = gameDocs.map(gameDoc=>gameDoc);
@@ -334,20 +374,26 @@
                     let j=0;
                     while(allGames[j]){// travel all game
                         let nameOfGame = allGames[j].nameofgame; // game name
+                        //console.log(nameOfGame);
                         db.collection("users")
                         .find({},{limit:1000})
                         .then(function (docs){
                             const allUsers = docs.map(doc=>doc);
-
+                            //console.log(allUsers);
                             let i=0;
                             let usersPlayTime=0;
                             let playtimetemp=0;
                             while(allUsers[i]){
-                                //console.log(allUsers[i].gamePlayedTimes);
+                                //console.log(allUsers[i].user);
                                 let k=0;
                                 
                                 let rating= allUsers[i].averageOfRating;
+                                //console.log(allUsers[i]);
+                                //console.log(allUsers[i].gamePlayedTimes[k]);
+                                //console.log(rating);console.log(allUsers[i].gamePlayedTimes[k].gameName);
+                                //console.log(rating);console.log(nameOfGame);
                                 while(allUsers[i].gamePlayedTimes[k]){
+
                                     if(allUsers[i].gamePlayedTimes[k].gameName == nameOfGame){
                                         //(UserPlayTime * UserRating ) *****FORMULA****
                                         playtimetemp+=rating*allUsers[i].gamePlayedTimes[k].time;
@@ -358,26 +404,32 @@
                                 
                                 i++;
                             }
-
-                            db.collection("games")
-                            .find({nameofgame:nameOfGame})
-                            .then(function (game){
-                                const gameArr = game.map(x=>x)[0];
-                                //console.log(gameArr);
-
-                                let totalplaytimeTemp= gameArr.playtime;
-                                //console.log(totalplaytimeTemp);
-                                let resultRate = playtimetemp/totalplaytimeTemp;
-                                //console.log(resultRate);
+                            if(playtimetemp!=0){
                                 db.collection("games")
-                                .updateOne(
-                                    {nameofgame:nameOfGame},
-                                    {
-                                        $set:{"rating":resultRate}
-                                    }
+                                .find({nameofgame:nameOfGame})
+                                .then(function (game){
+                                    const gameArr = game.map(x=>x)[0];
+                                    //console.log(gameArr);
+                                    
+                                    let totalplaytimeTemp= gameArr.playtime;
+                                    if(totalplaytimeTemp!=0){
+                                        //console.log(totalplaytimeTemp);
+                                        //console.log(playtimetemp);
+                                        let resultRate = playtimetemp/totalplaytimeTemp;
+                                        //console.log("Result rate ="+resultRate);
+                                        
+                                        db.collection("games")
+                                        .updateOne(
+                                            {nameofgame:nameOfGame},
+                                            {
+                                                $set:{"rating":resultRate}
+                                            }
 
-                                );   
-                            });    
+                                        );   
+                                    }
+                                });
+                            }   
+
                         });
                         j++;
                     }
@@ -392,11 +444,11 @@
                     var out = "";
                     const game=docs.map(function (doc){
 
-                        console.log(doc.allComments);
+                        //console.log(doc.allComments);
                         let i=0;
                         while(doc.allComments[i]){
                             
-                            console.log(doc.allComments[i].comment);
+                            //console.log(doc.allComments[i].comment);
                             out += "<li>"+doc.allComments[i].userName +"-->"+ doc.allComments[i].comment + "</li>"; 
                             i++; 
                         }

@@ -189,6 +189,11 @@
                 else {       
                     console.log("deleting user: ");
 
+                    /*
+                    db.collection("games")
+                    .find({})
+                    */
+
                     db.collection("users")
                         .deleteOne( {user: deletedUser.value})
                 

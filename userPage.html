@@ -7,7 +7,7 @@
 
   </head>
 
-  <body onLoad="loadUserInfo()">
+  <body onLoad="loadUserInfo();loadComments();findMostPlayedGame();calculateTotalPlayedTime()">
     <div class="header">
         <h1>Video Games Services</h1>
         <hr>
@@ -18,18 +18,23 @@
     <hr>
 
     <div class="card text-dark bg-warning mb-3" style="max-width: 18rem;">
+        <h3>*** User's Info ***</h3>
+        <hr>
+        <h5>*** User Name ***</h5>
         <div class="card-header" id="username"></div>
         <div class="card-body">
-          <p class="card-text"> Average of Rating <div id="averageOfRating"></div></p>
+          <p class="card-text">       ****** Average of Rating ******<div id="averageOfRating"></div></p>
           <hr>
-          <p class="card-text"> Total Played Game <div id="totalPlayedTime"></div></p>
+          <p class="card-text">       ****** Total Played Game ****** <div id="totalPlayedTime"></div></p>
           <hr>
-          <p class="card-text"> Most Played Game <div id="mostPlayedGame"></div></p>
-          <hr>
-          <p class="card-text"> Comments <div id="comments"></div></p>
+          <p class="card-text">        ******Most Played Game ****** <div id="mostPlayedGame"></div></p>
+
         </div>
       </div>
-
+      <div class="container">
+      <h3>User's Comments</h3>
+      <div  class="showAllGame" id="showComments"></div>
+    </div>
     <hr>
     <div class="container">  
     <button type="button"  style="max-width: 18rem;" class="btn btn-success" onclick="loadGamePage()">Go To Game Page(You can see all Available Games)</button>
@@ -41,14 +46,15 @@
 
         const app = new Realm.App({ id: "ceng-495-games-twlxy" });
         const mongodb = app.currentUser.mongoClient("mongodb-atlas");
+        var url_string = document.location.href;
+            var url = new URL(url_string);
+
+            var username = url.searchParams.get("username");
         
         const db = mongodb.db("gameService");
 
         function loadUserInfo(){
-            var url_string = document.location.href;
-            var url = new URL(url_string);
-
-            var username = url.searchParams.get("username");
+            
 
 
             db.collection("users")
@@ -60,8 +66,7 @@
                         document.getElementById("averageOfRating").innerHTML = docs.map(doc=>doc.averageOfRating);
                         document.getElementById("totalPlayedTime").innerHTML = docs.map(doc=>doc.totalPlayedTime);
                         document.getElementById("mostPlayedGame").innerHTML = docs.map(doc=>doc.mostPlayedGame);
-                        document.getElementById("comments").innerHTML = docs.map(doc=>doc.comments);
-
+                    
                     }
                 });
                 
@@ -72,10 +77,7 @@
 
         function loadGamePage(){
 
-            var url_string = document.location.href;
-            var url = new URL(url_string);
-
-            var username = url.searchParams.get("username");
+           
 
             db.collection("users")
             .find({user: username}, { limit: 1 })
@@ -94,6 +96,94 @@
                 alert(user + " does not exist.");
             }
         }
+
+        function loadComments(){
+
+                db.collection("users")
+                .find({user:username},{limit:100})
+                .then(function (docs){
+
+                    const commentss=docs.map(x=>x)[0].comments;
+
+                    //console.log(commentss);
+
+                    var out = "";
+
+                    let i=0;
+                    while(commentss[i]){
+                        
+                        out += "<li>"+commentss[i].gameName +"-->"+ commentss[i].comment + "</li>"; 
+                        i++; 
+                    }
+
+      
+                    document.getElementById("showComments").innerHTML = out;
+
+
+                });
+
+
+            }
+
+          function findMostPlayedGame(){
+
+            db.collection("users")
+            .find({user:username},{limit:1})
+            .then(function (user){
+
+              const gamePlayedArray = user.map(x=>x)[0].gamePlayedTimes;
+
+              let temp=0;
+              let name;
+              let i=0;
+              while(gamePlayedArray[i]){
+                if(gamePlayedArray[i].time>temp) {
+                  temp=gamePlayedArray[i].time;
+                  name=gamePlayedArray[i].gameName;
+                }
+                i++;
+              }
+              
+              db.collection("users").updateOne(
+                {user:username},
+                {
+                  $set:{"mostPlayedGame":name}
+                }
+              );
+
+            });
+          }  
+
+          function calculateTotalPlayedTime(){
+
+            db.collection("users")
+            .find({user:username},{limit:1})
+            .then(function (user){
+
+              const gamePlayedArray = user.map(x=>x)[0].gamePlayedTimes;
+
+              let temp=0;
+              let name;
+              let i=0;
+              while(gamePlayedArray[i]){
+                if(gamePlayedArray[i].time>temp) {
+                  temp+=gamePlayedArray[i].time;
+                }
+                i++;
+              }
+              
+              db.collection("users").updateOne(
+                {user:username},
+                {
+                  $set:{"totalPlayedTime":temp}
+                }
+              );
+              console.log(temp);
+
+            });
+            
+
+          }
 
     </script>   
 
