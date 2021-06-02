@@ -66,6 +66,8 @@
 
     <script>
         const app = new Realm.App({ id: "ceng-495-games-twlxy" });
+        const credentials = Realm.Credentials.anonymous();
+        app.logIn(credentials);   
         const mongodb = app.currentUser.mongoClient("mongodb-atlas");
         
         const db = mongodb.db("gameService");

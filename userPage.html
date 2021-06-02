@@ -38,7 +38,7 @@
     <hr>
     <div class="container">  
     <button type="button"  style="max-width: 18rem;" class="btn btn-success" onclick="loadGamePage()">Go To Game Page(You can see all Available Games)</button>
-    <hr>
+    
     <button type="button" class="btn btn-primary" onclick="goBack()">Go Back</button>
     </div>
     <hr>
@@ -46,7 +46,10 @@
 
     <script>
 
+        
         const app = new Realm.App({ id: "ceng-495-games-twlxy" });
+        const credentials = Realm.Credentials.anonymous();
+        app.logIn(credentials);   
         const mongodb = app.currentUser.mongoClient("mongodb-atlas");
         var url_string = document.location.href;
             var url = new URL(url_string);
