@@ -7,7 +7,7 @@
 
   </head>
 
-  <body onLoad="loadUserInfo();loadComments();findMostPlayedGame();calculateTotalPlayedTime()">
+  <body onLoad="loadUserInfo();loadComments();findMostPlayedGame()">
     <div class="header">
         <h1>Video Games Services</h1>
         <hr>
@@ -25,7 +25,7 @@
         <div class="card-body">
           <p class="card-text">       ****** Average of Rating ******<div id="averageOfRating"></div></p>
           <hr>
-          <p class="card-text">       ****** Total Played Game ****** <div id="totalPlayedTime"></div></p>
+          <p class="card-text">       ****** Total Played Time ****** <div id="totalPlayedTime"></div></p>
           <hr>
           <p class="card-text">        ******Most Played Game ****** <div id="mostPlayedGame"></div></p>
 
@@ -38,6 +38,8 @@
     <hr>
     <div class="container">  
     <button type="button"  style="max-width: 18rem;" class="btn btn-success" onclick="loadGamePage()">Go To Game Page(You can see all Available Games)</button>
+    <hr>
+    <button type="button" class="btn btn-primary" onclick="goBack()">Go Back</button>
     </div>
     <hr>
 
@@ -153,37 +155,9 @@
 
             });
           }  
-
-          function calculateTotalPlayedTime(){
-
-            db.collection("users")
-            .find({user:username},{limit:1})
-            .then(function (user){
-
-              const gamePlayedArray = user.map(x=>x)[0].gamePlayedTimes;
-
-              let temp=0;
-              let name;
-              let i=0;
-              while(gamePlayedArray[i]){
-                if(gamePlayedArray[i].time>temp) {
-                  temp+=gamePlayedArray[i].time;
-                }
-                i++;
-              }
-              
-              db.collection("users").updateOne(
-                {user:username},
-                {
-                  $set:{"totalPlayedTime":temp}
-                }
-              );
-              console.log(temp);
-
-            });
-            
-
-          }
+          function goBack() {
+            window.history.back();
+            }
 
     </script>   
 

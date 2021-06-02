@@ -74,13 +74,13 @@
             db.collection("users")
                 .find({}, { limit: 1000 })
                 .then(docs => {
-                    const html = docs.map(doc => `<div>${doc.user}</div>`);
+                    const html = docs.map(doc => `<h6>${doc.user}</h6>`);
                     document.getElementById("users").innerHTML = html.join('');
                 })
         }
 
 
-        function addGame(){
+        async function addGame(){
             const gameName = document.getElementById("gameName");
             const genre = document.getElementById("genre");
             const photo = document.getElementById("photo");
@@ -90,7 +90,7 @@
                     return;
             }
 
-            db.collection("games")
+            await db.collection("games")
             .find({nameofgame: gameName.value}, { limit: 1 })
             .then(async function (docs) {
                 if (docs.length > 0) {
@@ -99,7 +99,7 @@
                 }
                 else {   
 
-                db.collection("games").insertOne(
+                await db.collection("games").insertOne(
                     {          
                         nameofgame: gameName.value,
                         genre: genre.value,
@@ -115,39 +115,70 @@
                     
                 }
             });
+            location.reload();
        
 
         }
 
-        function removeGame(){
+        async function removeGame(){
 
             const deletedGame = document.getElementById("removedGameName");
 
-            console.log(db.collection("games")
-            .find({nameofgame: deletedGame.value}, { limit: 1 }));
-            db.collection("games")
+            
+            await db.collection("games")
             .find({nameofgame: deletedGame.value}, { limit: 1 })
-            .then(function (docs) {
+            .then(async function (docs) {
                 if (docs.length == 0) {
                     alert("There is no Game named " + deletedGame.value);
                     deletedGame.value = "";
                 }
-                else {       
+                else {    
 
-                    db.collection("games")
+                    await db.collection("users")
+                    .find({},{limit:100})
+                    .then(async function (users){
+
+                        const gamesArray = users.map(x=>x);
+                        let i=0;
+                        while(gamesArray[i]){
+
+                            await db.collection("users")
+                            .updateOne({nameofgame:gamesArray[i].nameofgame,"comments.gameName":deletedGame.value},
+                            {
+                                $pull: {"comments":{"gameName":deletedGame.value}}
+                            });
+
+                            await db.collection("users")
+                            .updateOne({nameofgame:gamesArray[i].nameofgame,"ratedFor.gameName":deletedGame.value},
+                            {
+                                $pull: {"ratedFor":{"gameName":deletedGame.value}}
+                            });
+
+                            await db.collection("users")
+                            .updateOne({nameofgame:gamesArray[i].nameofgame,"gamePlayedTimes.gameName":deletedGame.value},
+                            {
+                                $pull: {"gamePlayedTimes":{"gameName":deletedGame.value}}
+                            });
+
+                            i++;
+                        }
+                    });   
+
+                    await db.collection("games")
                         .deleteOne( {nameofgame: deletedGame.value})
                 
                     alert(deletedGame.value + " has been deleted."); 
                     deletedGame.value = "";                       
                 }
             });
+            location.reload();
 
         }
 
 
-        function addUser() {
+        async function addUser() {
             const newUser = document.getElementById("newUser");
-            db.collection("users")
+            await db.collection("users")
             .find({user: newUser.value}, { limit: 1 })
             .then(async function (docs) {
                 if (docs.length > 0) {
@@ -155,7 +186,7 @@
                     newUser.value = "";
                 }
                 else {       
-                    db.collection("users")
+                    await db.collection("users")
                         .insertOne({ 
                                     user: newUser.value,
                                     averageOfRating:0,
@@ -173,34 +204,56 @@
                                         
                 }
             });
+            location.reload();
             
         }
-        function removeUser(){
+        async function removeUser(){ // when remove user , Also Remove all related comments and ratings
 
             const deletedUser = document.getElementById("deleteUser");
 
-            db.collection("users")
+            await db.collection("users")
             .find({user: deletedUser.value}, { limit: 1 })
-            .then(function (docs) {
+            .then(async function (docs) {
                 if (docs.length == 0) {
                     alert("There is no User named " + deletedUser.value );
                     deletedUser.value = "";
                 }
                 else {       
-                    console.log("deleting user: ");
 
-                    /*
-                    db.collection("games")
-                    .find({})
-                    */
+                    
+                    await db.collection("games")
+                    .find({},{limit:100})
+                    .then(async function (games){
 
-                    db.collection("users")
+                        const gamesArray = games.map(x=>x);
+                        let i=0;
+                        while(gamesArray[i]){
+
+                            await db.collection("games")
+                            .updateOne({nameofgame:gamesArray[i].nameofgame,"allComments.userName":deletedUser.value},
+                            {
+                                $pull: {"allComments":{"userName":deletedUser.value}}
+                            });
+
+                            await db.collection("games")
+                            .updateOne({nameofgame:gamesArray[i].nameofgame,"allRatings.userName":deletedUser.value},
+                            {
+                                $pull: {"allRatings":{"userName":deletedUser.value}}
+                            });
+
+                            i++;
+                        }
+                    });
+                    
+
+                    await db.collection("users")
                         .deleteOne( {user: deletedUser.value})
                 
                     alert(deletedUser.value + "' is deleted."); 
                     deletedUser.value = "";                       
                 }
             });
+            location.reload();
 
         }
         function loginUser() {

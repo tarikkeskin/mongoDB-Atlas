@@ -30,7 +30,11 @@
           <div class="container">
             <h3>All Comments From Users</h3>
           <div  class="showAllGame" id="showComments"></div>
+
         </div>
+
+        <button type="button" class="btn btn-primary" onclick="goBack()">Go Back</button>
+        
         <hr>
         <hr>
         <hr>
@@ -332,6 +336,12 @@
 
                                 }
                             );
+                            await db.collection("users").updateOne(
+                                {user:userName},
+                                {
+                                $inc:{"totalPlayedTime":playtimeInt}
+                                }
+                            );
                             break;
                         }
                         i++;
@@ -344,9 +354,11 @@
                                 $push: {
                                     
                                     "gamePlayedTimes":{"gameName":gameName,"time":playtimeInt}
-                                }
+                                },
+                                $inc:{"totalPlayedTime":playtimeInt}
                             }
                         );
+                        
                         
 
                     }
@@ -459,8 +471,11 @@
 
                 });
 
-
             }
+            function goBack() {
+            window.history.back();
+            }
+
 
 
         </script>

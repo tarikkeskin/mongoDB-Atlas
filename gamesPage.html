@@ -23,9 +23,17 @@
         <hr>
 
         <div  class="showAllGame" id="showGame">
+
+            
             
 
         </div>
+        <button type="button" class="btn btn-primary" onclick="goBack()">Go Back</button>
+        <hr>
+        <hr>
+        <hr>
+        <hr>
+        
 
         <script>
             const app = new Realm.App({ id: "ceng-495-games-twlxy" });
@@ -78,6 +86,9 @@
 
 
                 });
+            }
+            function goBack() {
+            window.history.back();
             }
 
             
